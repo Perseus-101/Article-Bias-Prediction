@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+distilbert-base-uncased-baseline,random,70.03,69.15,0.51
