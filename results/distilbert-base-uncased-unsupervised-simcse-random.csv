@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+distilbert-base-uncased-unsupervised-simcse,random,74.53,73.62,0.44

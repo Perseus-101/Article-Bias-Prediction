@@ -100,8 +100,12 @@ class BiasTrainer:
             source_loss = self.ce_loss(source_logits, source_labels)
             loss = bias_loss - 0.1 * source_loss  # Lambda=0.1 for adversarial weight
             
-        else:  # Baseline transformer
-            logits = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        else:  # Baseline transformer or SimCSE
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            if isinstance(outputs, dict):
+                logits = outputs['logits']
+            else:
+                logits = outputs
             loss = self.ce_loss(logits, bias_labels)
         
         return loss
@@ -160,8 +164,12 @@ class BiasTrainer:
                 elif isinstance(self.model, TripletTransformer):
                     outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
                     logits = outputs['logits']
-                else:
-                    logits = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                else:  # Baseline transformer or SimCSE
+                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                    if isinstance(outputs, dict):
+                        logits = outputs['logits']
+                    else:
+                        logits = outputs
                 
                 loss = self.ce_loss(logits, bias_labels)
                 total_loss += loss.item()
@@ -182,16 +190,19 @@ class BiasTrainer:
             f'{split}_mae': mean_absolute_error(all_labels, all_preds)
         }
     
-    def train(self, num_epochs: int) -> List[Dict[str, float]]:
-        """Train the model for specified number of epochs.
+    def train(self, num_epochs: int, patience: int = 2) -> List[Dict[str, float]]:
+        """Train the model for specified number of epochs with early stopping.
         
         Args:
             num_epochs: Number of epochs to train for
+            patience: Number of epochs to wait for improvement before early stopping
             
         Returns:
             List of metric dictionaries for each epoch
         """
         metrics_history = []
+        best_val_metric = float('inf')  # Lower is better for loss
+        patience_counter = 0
         
         for epoch in range(num_epochs):
             print(f'\nEpoch {epoch + 1}/{num_epochs}')
@@ -209,5 +220,16 @@ class BiasTrainer:
             # Print metrics
             metrics_str = ' '.join(f'{k}: {v:.2f}' for k, v in epoch_metrics.items())
             print(f'Epoch {epoch + 1} metrics: {metrics_str}')
+            
+            # Early stopping check
+            current_val_metric = val_metrics['val_loss']
+            if current_val_metric < best_val_metric:
+                best_val_metric = current_val_metric
+                patience_counter = 0
+            else:
+                patience_counter += 1
+                if patience_counter >= patience:
+                    print(f'Early stopping triggered after {epoch + 1} epochs')
+                    break
         
         return metrics_history

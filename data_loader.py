@@ -68,7 +68,9 @@ def get_dataloaders(data_dir: str,
                    split_type: str,
                    tokenizer_name: str,
                    batch_size: int,
-                   max_length: int = 512) -> Tuple[DataLoader, DataLoader, DataLoader]:
+                   max_length: int = 512,
+                   num_workers: int = 4,
+                   pin_memory: bool = True) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """Create DataLoaders for train, validation and test sets.
     
     Args:
@@ -105,26 +107,29 @@ def get_dataloaders(data_dir: str,
         max_length=max_length
     )
     
-    # Create dataloaders
+    # Create dataloaders with optimized settings
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=2
+        num_workers=num_workers,
+        pin_memory=pin_memory
     )
     
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2
+        num_workers=num_workers,
+        pin_memory=pin_memory
     )
     
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=2
+        num_workers=num_workers,
+        pin_memory=pin_memory
     )
     
     return train_loader, val_loader, test_loader

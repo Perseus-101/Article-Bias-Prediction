@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+distilbert-base-uncased-triplet-pretrained,random,73.13,73.00,0.45
