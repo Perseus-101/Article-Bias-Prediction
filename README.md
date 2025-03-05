@@ -138,7 +138,9 @@ Results on random split using DistilBERT:
   title       = {We Can Detect Your Bias: Predicting the Political Ideology of News Articles},
   booktitle   = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
   series      = {EMNLP~'20},
-  year        = {2020},
-  pages       = {4982--4991}
+  NOmonth     = {November},
+  year        = {2020}
+  pages       = {4982--4991},
+  NOpublisher = {Association for Computational Linguistics}
 }
 ```
