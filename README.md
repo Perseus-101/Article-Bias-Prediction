@@ -1,5 +1,7 @@
 # Article Bias Prediction
 
+This repository is a fork of [ramybaly/Article-Bias-Prediction](https://github.com/ramybaly/Article-Bias-Prediction). My goal is to enhance the original work by implementing and evaluating multiple pre-training approaches for political bias detection, including Triplet Loss Pre-training (TLP), SimCSE, and a novel hybrid approach that combines both methods. These enhancements aim to improve the model's ability to capture nuanced political biases in news articles through better representation learning.
+
 ## Dataset
 The articles crawled from www.allsides.com are available in the `./data` folder, along with the different evaluation splits.
 
@@ -64,6 +66,33 @@ python main.py \
   --learning_rate 2e-5 \
   --split_type random
 ```
+## Parameter Guidelines
+
+Here are the recommended ranges and maximum values for different parameters across all model configurations:
+
+### Common Parameters
+- **model_name**: Any HuggingFace transformer model (recommended: distilbert-base-uncased)
+- **max_length**: Maximum sequence length (recommended: 256-512)
+- **split_type**: Either "random" or "media-based"
+
+### Training Parameters
+- **batch_size**: 8-32 (GPU memory dependent)
+- **learning_rate**: 1e-5 to 5e-5
+- **num_epochs**: 3-5 (can be increased for better performance)
+
+### Pre-training Specific Parameters
+- **pretrain_batch_size**: 8-32 (GPU memory dependent)
+- **pretrain_epochs**: 3-5
+- **pretrain_lr**: 1e-5 to 5e-5
+- **finetune_batch_size**: 16-32
+- **finetune_epochs**: 3-5
+- **finetune_lr**: 1e-5 to 5e-5
+
+### Model-Specific Parameters
+- **temperature** (SimCSE): 0.05-0.1
+- **triplet_weight** (Hybrid): 0.1-2.0
+- **simcse_weight** (Hybrid): 0.1-2.0
+- **ce_weight** (Hybrid): 0.1-1.0
 
 ### 2. Triplet Loss Pre-training (TLP)
 Enhances bias detection by learning article similarities using triplet loss.

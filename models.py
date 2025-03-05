@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import AutoModel
+from transformers import AutoModel, AutoConfig
 from typing import Dict, Tuple
 
 class BaselineTransformer(nn.Module):
@@ -13,7 +13,9 @@ class BaselineTransformer(nn.Module):
             num_classes: Number of bias classes (default: 3 for left/center/right)
         """
         super().__init__()
+        # Initialize the transformer model without xformers to avoid compatibility issues
         self.transformer = AutoModel.from_pretrained(model_name)
+        hidden_size = self.transformer.config.hidden_size
         self.dropout = nn.Dropout(0.1)
         self.classifier = nn.Linear(self.transformer.config.hidden_size, num_classes)
         
@@ -36,6 +38,8 @@ class AdversarialMediaTransformer(nn.Module):
         """
         super().__init__()
         self.transformer = AutoModel.from_pretrained(model_name)
+        if hasattr(self.transformer, 'gradient_checkpointing_enable'):
+            self.transformer.gradient_checkpointing_enable()  # Enable gradient checkpointing if supported
         hidden_size = self.transformer.config.hidden_size
         
         # Bias classifier
@@ -71,6 +75,8 @@ class TripletTransformer(nn.Module):
         """
         super().__init__()
         self.transformer = AutoModel.from_pretrained(model_name)
+        if hasattr(self.transformer, 'gradient_checkpointing_enable'):
+            self.transformer.gradient_checkpointing_enable()  # Enable gradient checkpointing if supported
         hidden_size = self.transformer.config.hidden_size
         
         # Projection head for triplet loss

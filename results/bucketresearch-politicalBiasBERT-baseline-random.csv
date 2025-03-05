@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+bucketresearch/politicalBiasBERT-baseline,random,75.08,75.00,0.40

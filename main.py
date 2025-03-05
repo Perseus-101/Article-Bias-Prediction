@@ -22,7 +22,7 @@ def parse_args():
     # Model arguments
     parser.add_argument('--model_type', type=str, choices=['baseline', 'adversarial', 'triplet'],
                         default='baseline', help='Type of model to use')
-    parser.add_argument('--model_name', type=str, default='distilbert-base-uncased',  # Changed to a smaller model
+    parser.add_argument('--model_name', type=str, default='bucketresearch/politicalBiasBERT',  # Using specialized political bias model
                         help='HuggingFace model name')
     
     # Training arguments

@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+google-bert/bert-large-uncased-baseline,media,38.25,43.85,0.78

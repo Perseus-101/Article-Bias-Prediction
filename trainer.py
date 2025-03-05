@@ -20,24 +20,15 @@ class BiasTrainer:
                  learning_rate: float = 2e-5,
                  warmup_steps: int = 0,
                  gradient_accumulation_steps: int = 1):
-        """Initialize the trainer.
-        
-        Args:
-            model: The transformer model to train
-            train_loader: DataLoader for training data
-            val_loader: DataLoader for validation data
-            test_loader: DataLoader for test data
-            device: Device to train on (cuda/cpu)
-            learning_rate: Learning rate for optimization
-            warmup_steps: Number of warmup steps for scheduler
-            gradient_accumulation_steps: Number of steps to accumulate gradients
-        """
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
         self.device = device
         self.gradient_accumulation_steps = gradient_accumulation_steps
+        
+        # Initialize mixed precision scaler
+        self.scaler = torch.cuda.amp.GradScaler()
         
         # Optimizer and scheduler setup
         self.optimizer = AdamW(model.parameters(), lr=learning_rate)
@@ -53,20 +44,26 @@ class BiasTrainer:
         self.triplet_loss = nn.TripletMarginLoss(margin=1.0)
         
     def train_epoch(self) -> Dict[str, float]:
-        """Train for one epoch."""
         self.model.train()
         total_loss = 0
         steps = 0
         
         for batch_idx, batch in enumerate(tqdm(self.train_loader)):
-            loss = self._training_step(batch)
+            # Use autocast for mixed precision training
+            with torch.cuda.amp.autocast():
+                loss = self._training_step(batch)
+                loss = loss / self.gradient_accumulation_steps
             
-            # Gradient accumulation
-            loss = loss / self.gradient_accumulation_steps
-            loss.backward()
+            # Scale loss and compute gradients
+            self.scaler.scale(loss).backward()
             
             if (batch_idx + 1) % self.gradient_accumulation_steps == 0:
-                self.optimizer.step()
+                # Unscale gradients and update parameters
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
                 self.scheduler.step()
                 self.optimizer.zero_grad()
             
@@ -76,7 +73,6 @@ class BiasTrainer:
         return {'train_loss': total_loss / steps}
     
     def _training_step(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Perform a single training step."""
         input_ids = batch['input_ids'].to(self.device)
         attention_mask = batch['attention_mask'].to(self.device)
         bias_labels = batch['bias_label'].to(self.device)
@@ -87,7 +83,6 @@ class BiasTrainer:
             logits = outputs['logits']
             embeddings = outputs['embeddings']
             
-            # Calculate triplet loss
             triplet_loss = self._compute_batch_triplet_loss(embeddings, bias_labels)
             ce_loss = self.ce_loss(logits, bias_labels)
             loss = ce_loss + triplet_loss
@@ -95,12 +90,11 @@ class BiasTrainer:
         elif isinstance(self.model, AdversarialMediaTransformer):
             bias_logits, source_logits = self.model(input_ids=input_ids, attention_mask=attention_mask)
             
-            # Calculate adversarial loss
             bias_loss = self.ce_loss(bias_logits, bias_labels)
             source_loss = self.ce_loss(source_logits, source_labels)
-            loss = bias_loss - 0.1 * source_loss  # Lambda=0.1 for adversarial weight
+            loss = bias_loss - 0.1 * source_loss
             
-        else:  # Baseline transformer or SimCSE
+        else:
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
             if isinstance(outputs, dict):
                 logits = outputs['logits']

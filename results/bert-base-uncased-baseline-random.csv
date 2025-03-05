@@ -1,0 +1,2 @@
+Model,Split,Macro F1,Acc.,MAE
+bert-base-uncased-baseline,random,73.25,72.92,0.42
