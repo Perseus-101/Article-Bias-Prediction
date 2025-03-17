@@ -28,7 +28,7 @@ class BiasTrainer:
         self.gradient_accumulation_steps = gradient_accumulation_steps
         
         # Initialize mixed precision scaler
-        self.scaler = torch.cuda.amp.GradScaler()
+        self.scaler = torch.amp.GradScaler()
         
         # Optimizer and scheduler setup
         self.optimizer = AdamW(model.parameters(), lr=learning_rate)
@@ -50,7 +50,7 @@ class BiasTrainer:
         
         for batch_idx, batch in enumerate(tqdm(self.train_loader)):
             # Use autocast for mixed precision training
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast(device_type=self.device.type):
                 loss = self._training_step(batch)
                 loss = loss / self.gradient_accumulation_steps
             

@@ -28,7 +28,7 @@ def parse_args():
     # Pre-training arguments
     parser.add_argument('--pretrain_batch_size', type=int, default=8,
                         help='Batch size for pre-training')
-    parser.add_argument('--pretrain_epochs', type=int, default=3,
+    parser.add_argument('--pretrain_epochs', type=int, default=10,
                         help='Number of epochs for pre-training')
     parser.add_argument('--pretrain_lr', type=float, default=2e-5,
                         help='Learning rate for pre-training')

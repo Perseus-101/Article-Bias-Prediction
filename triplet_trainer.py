@@ -33,6 +33,9 @@ class TripletPreTrainer:
         self.device = device
         self.gradient_accumulation_steps = gradient_accumulation_steps
         
+        # Initialize mixed precision scaler
+        self.scaler = torch.amp.GradScaler()
+        
         # Optimizer and scheduler setup
         self.optimizer = AdamW(model.parameters(), lr=learning_rate)
         total_steps = len(triplet_loader) * gradient_accumulation_steps
@@ -52,14 +55,21 @@ class TripletPreTrainer:
         steps = 0
         
         for batch_idx, batch in enumerate(tqdm(self.triplet_loader)):
-            loss = self._training_step(batch)
+            # Use autocast for mixed precision training
+            with torch.amp.autocast(device_type=self.device.type):
+                loss = self._training_step(batch)
+                loss = loss / self.gradient_accumulation_steps
             
-            # Gradient accumulation
-            loss = loss / self.gradient_accumulation_steps
-            loss.backward()
+            # Scale loss and compute gradients
+            self.scaler.scale(loss).backward()
             
             if (batch_idx + 1) % self.gradient_accumulation_steps == 0:
-                self.optimizer.step()
+                # Unscale gradients and update parameters
+                self.scaler.unscale_(self.optimizer)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
                 self.scheduler.step()
                 self.optimizer.zero_grad()
             

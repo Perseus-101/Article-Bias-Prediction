@@ -1,6 +1,6 @@
 # Article Bias Prediction
 
-This repository is a fork of [ramybaly/Article-Bias-Prediction](https://github.com/ramybaly/Article-Bias-Prediction). My goal is to enhance the original work by implementing and evaluating multiple pre-training approaches for political bias detection, including Triplet Loss Pre-training (TLP), SimCSE, and a novel hybrid approach that combines both methods. These enhancements aim to improve the model's ability to capture nuanced political biases in news articles through better representation learning.
+This repository is a fork of [ramybaly/Article-Bias-Prediction](https://github.com/ramybaly/Article-Bias-Prediction). My goal is to enhance the original work by implementing and evaluating Triplet Loss Pre-training (TLP) for political bias detection. This enhancement aims to improve the model's ability to capture nuanced political biases in news articles through better representation learning using pre-trained models from HuggingFace.
 
 ## Dataset
 The articles crawled from www.allsides.com are available in the `./data` folder, along with the different evaluation splits.
@@ -88,14 +88,30 @@ Here are the recommended ranges and maximum values for different parameters acro
 - **finetune_epochs**: 3-5
 - **finetune_lr**: 1e-5 to 5e-5
 
-### Model-Specific Parameters
-- **temperature** (SimCSE): 0.05-0.1
-- **triplet_weight** (Hybrid): 0.1-2.0
-- **simcse_weight** (Hybrid): 0.1-2.0
-- **ce_weight** (Hybrid): 0.1-1.0
+### TLP-Specific Parameters
+- **margin**: Margin for triplet loss (recommended: 0.5-1.0)
+- **mining_strategy**: Strategy for mining triplets (options: "random", "hard", "semi-hard")
 
 ### 2. Triplet Loss Pre-training (TLP)
-Enhances bias detection by learning article similarities using triplet loss.
+Enhances bias detection by learning article similarities using triplet loss. This approach uses HuggingFace transformer models as the backbone and fine-tunes them with triplet loss to better capture political bias in news articles.
+
+#### Pre-training Phase
+In this phase, the model learns to map articles with similar political biases closer together in the embedding space while pushing articles with different biases further apart.
+
+```bash
+python run_triplet_pretraining.py \
+  --model_name distilbert-base-uncased \
+  --pretrain_batch_size 8 \
+  --pretrain_epochs 3 \
+  --pretrain_lr 2e-5 \
+  --max_length 256 \
+  --split_type random \
+  --margin 0.5 \
+  --mining_strategy hard
+```
+
+#### Fine-tuning Phase
+After pre-training, the model is fine-tuned on the classification task to predict the political bias of articles.
 
 ```bash
 python run_triplet_pretraining.py \
@@ -110,54 +126,56 @@ python run_triplet_pretraining.py \
   --split_type random
 ```
 
-### 3. SimCSE Pre-training
-Leverages contrastive learning with SimCSE for better article representations.
+#### Using Other HuggingFace Models
+You can experiment with different pre-trained models from HuggingFace by changing the `--model_name` parameter:
 
 ```bash
-python run_simcse_pretraining.py \
-  --model_name distilbert-base-uncased \
-  --pretrain_batch_size 32 \
+# Using BERT base
+python run_triplet_pretraining.py \
+  --model_name bert-base-uncased \
+  --pretrain_batch_size 8 \
   --pretrain_epochs 3 \
   --pretrain_lr 2e-5 \
-  --finetune_batch_size 32 \
-  --finetune_epochs 3 \
+  --finetune_batch_size 16 \
+  --finetune_epochs 5 \
   --finetune_lr 5e-5 \
   --max_length 256 \
-  --split_type random \
-  --temperature 0.05
-```
+  --split_type random
 
-Add `--supervised` flag for supervised SimCSE.
-
-### 4. Hybrid Approach (TLP + SimCSE)
-Combines triplet loss and SimCSE for comprehensive article understanding.
-
-```bash
-python run_hybrid_pretraining.py \
-  --model_name distilbert-base-uncased \
-  --pretrain_batch_size 16 \
+# Using RoBERTa base
+python run_triplet_pretraining.py \
+  --model_name roberta-base \
+  --pretrain_batch_size 8 \
   --pretrain_epochs 3 \
   --pretrain_lr 2e-5 \
-  --finetune_batch_size 32 \
-  --finetune_epochs 3 \
+  --finetune_batch_size 16 \
+  --finetune_epochs 5 \
   --finetune_lr 5e-5 \
   --max_length 256 \
-  --split_type random \
-  --triplet_weight 1.0 \
-  --simcse_weight 1.0 \
-  --ce_weight 0.1
+  --split_type random
 ```
 
 ## Performance Comparison
 
-Results on random split using DistilBERT:
+### Results on Random Split (Ranked by Macro F1)
 
-| Model | Macro F1 | Accuracy | MAE |
-|-------|----------|----------|-----|
-| Baseline | 70.03 | 69.15 | 0.51 |
-| TLP | 73.13 | 73.00 | 0.45 |
-| SimCSE | 74.53 | 73.62 | 0.44 |
-| Hybrid | 71.70 | 71.38 | 0.45 |
+| Model | Approach | Macro F1 | Accuracy | MAE |
+|-------|----------|----------|----------|-----|
+| BERT Large | TLP | 76.43 | 75.85 | 0.40 |
+| BERT Large | Baseline | 75.30 | 74.69 | 0.41 |
+| PoliticalBiasBERT | Baseline | 75.08 | 75.00 | 0.40 |
+| DistilBERT | Unsupervised SimCSE | 74.53 | 73.62 | 0.44 |
+| BERT Base | Baseline | 73.25 | 72.92 | 0.42 |
+| DistilBERT | TLP | 73.13 | 73.00 | 0.45 |
+| DistilBERT | Hybrid Pretrained | 71.70 | 71.38 | 0.45 |
+| DistilBERT | Baseline | 70.03 | 69.15 | 0.51 |
+
+### Results on Media-Based Split (Ranked by Macro F1)
+
+| Model | Approach | Macro F1 | Accuracy | MAE |
+|-------|----------|----------|----------|-----|
+| BERT Large | Baseline | 38.25 | 43.85 | 0.78 |
+| BERT Large | TLP | 21.03 | 46.08 | 0.85 |
 
 ## Citation
 
