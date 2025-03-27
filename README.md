@@ -161,6 +161,14 @@ python run_triplet_pretraining.py \
 
 | Model | Approach | Macro F1 | Accuracy | MAE |
 |-------|----------|----------|----------|-----|
+| FacebookAI/roberta-base-baseline-max-performance | Baseline | 86.09 | 85.85 | 0.23 |
+| FacebookAI/roberta-base-baseline | Baseline | 85.24 | 85.15 | 0.23 |
+| roberta-base-baseline | Baseline | 85.02 | 84.92 | 0.23 |
+| FacebookAI/roberta-base-baseline-high-learing-rate-5e-6 | Baseline | 81.05 | 80.85 | 0.31 |
+| roberta-base-baseline | Baseline | 77.67 | 77.31 | 0.36 |
+| FacebookAI/roberta-base-baseline | Baseline | 77.83 | 77.54 | 0.35 |
+| roberta-base-triplet-pretrained | TLP | 78.7 | 77.77 | 0.38 |
+| FacebookAI/roberta-base-triplet-pretrained | TLP | 76.19 | 75.69 | 0.4 |
 | BERT Large | TLP | 76.43 | 75.85 | 0.40 |
 | BERT Large | Baseline | 75.30 | 74.69 | 0.41 |
 | PoliticalBiasBERT | Baseline | 75.08 | 75.00 | 0.40 |
